@@ -20,8 +20,10 @@ const theme: MD3Theme = {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: 'tomato',
-      secondary: 'yellow',
+      // elevation: {
+      //   ...DefaultTheme.colors.elevation,
+      //   "level1": "yellow",
+      // },
     },
     fonts: configureFonts({config: fontConfig}),
   };
