@@ -3,8 +3,9 @@ import { StatusBar } from "expo-status-bar";
 import { Text } from "../common";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Button, Surface } from "react-native-paper";
-import { Option, QuestionBank } from "../../interfaces/QuestionBank";
+import { Button, RadioButton, Surface } from "react-native-paper";
+import { Option, Question } from "../../interfaces/QuestionBank";
+import { BASE_URL } from "../../constants";
 
 const QuestionPanel = ({ questionText }): React.JSX.Element => {
   return (
@@ -14,12 +15,27 @@ const QuestionPanel = ({ questionText }): React.JSX.Element => {
   );
 };
 
-const OptionsPanel = ({ options }) => {
-    return (
-    <View style={styles.optionsPanel}>{options.map((option: Option) => {
-        return <Text>{option.option}</Text>
-    })}</View>
-    );
+const OptionsPanel = ({ options, selectedOption, setSelectedOption }) => {
+  return (
+    <View style={styles.optionsPanel}>
+      <RadioButton.Group
+        onValueChange={(value) => setSelectedOption(value)}
+        value={selectedOption}
+      >
+        {options.map((option: Option) => {
+          return (
+            <RadioButton.Item
+              key={option.id}
+              label={option.option}
+              value={option.id}
+              labelStyle={{ textAlign: "left", width: 300 }}
+              position="trailing"
+            />
+          );
+        })}
+      </RadioButton.Group>
+    </View>
+  );
 };
 
 const ButtonPanel = ({ onPressNext, onPressPrevious }): React.JSX.Element => {
@@ -36,40 +52,40 @@ const ButtonPanel = ({ onPressNext, onPressPrevious }): React.JSX.Element => {
 };
 
 const QuestionnaireScreen = (props): React.JSX.Element => {
-  const [questionBank, setQuestionBank] = useState<QuestionBank | undefined>(
+  const [questionNumber, setQuestionNumber] = useState<number>(1);
+  const [question, setQuestion] = useState<Question | undefined>(undefined);
+  const [selectedOption, setSelectedOption] = useState<string | undefined>(
     undefined
   );
-  const [currentIndex, setCurrentIndex] = useState(0);
+  console.log(selectedOption);
 
   useEffect(() => {
     axios
-      .get("http://192.168.0.4:8080/api/questionbank")
+      .get(`${BASE_URL}/questionbank/question/number/${questionNumber}`)
       .then((res) => {
-        setQuestionBank(res.data);
+        setQuestion(res.data);
       })
       .catch((err) => console.log(err));
-  }, []);
+  }, [questionNumber]);
 
   const onPressNext = () => {
-    if (currentIndex < questionBank.questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
+    setQuestionNumber(questionNumber + 1);
   };
 
   const onPressPrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
+    setQuestionNumber(questionNumber - 1);
   };
 
   return (
     <View style={styles.container}>
-      {questionBank && (
-        <QuestionPanel
-          questionText={questionBank.questions[currentIndex].questionText}
+      {question && <QuestionPanel questionText={question.questionText} />}
+      {question && (
+        <OptionsPanel
+          options={question.options}
+          selectedOption={selectedOption}
+          setSelectedOption={setSelectedOption}
         />
       )}
-      {questionBank && <OptionsPanel options={questionBank.questions[currentIndex].options}/> }
       <ButtonPanel
         onPressNext={onPressNext}
         onPressPrevious={onPressPrevious}
@@ -106,11 +122,11 @@ const styles = StyleSheet.create({
   },
   optionsPanel: {
     flex: 1,
-    margin: 40,
+    margin: 20,
     flexDirection: "column",
-    justifyContent: 'space-around',
-    alignItems: 'flex-start',
-  }
+    justifyContent: "space-around",
+    alignItems: "flex-start",
+  },
 });
 
 export { QuestionnaireScreen };
