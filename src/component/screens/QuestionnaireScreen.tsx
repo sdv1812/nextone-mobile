@@ -7,9 +7,10 @@ import { Button, RadioButton, Surface } from "react-native-paper";
 import { Option, Question } from "../../interfaces/QuestionBank";
 import { BASE_URL } from "../../constants";
 
-const QuestionPanel = ({ questionText }): React.JSX.Element => {
+const QuestionPanel = ({ questionText, questionNumber }): React.JSX.Element => {
   return (
     <Surface style={styles.questionPanel} mode="flat">
+      <Text variant="headlineMedium">{questionNumber}</Text>
       <Text>{questionText}</Text>
     </Surface>
   );
@@ -38,14 +39,23 @@ const OptionsPanel = ({ options, selectedOption, setSelectedOption }) => {
   );
 };
 
-const ButtonPanel = ({ onPressNext, onPressPrevious }): React.JSX.Element => {
+const ButtonPanel = ({
+  onPressSubmit,
+  onPressPrevious,
+  questionNumber,
+  selectedOption
+}): React.JSX.Element => {
   return (
     <View style={styles.buttonPanel}>
-      <Button mode="outlined" onPress={onPressPrevious}>
+      <Button
+        mode="outlined"
+        onPress={onPressPrevious}
+        disabled={questionNumber === 1}
+      >
         Prev
       </Button>
-      <Button mode="outlined" onPress={onPressNext}>
-        Next
+      <Button mode="contained" onPress={onPressSubmit} disabled={!selectedOption}>
+        Submit
       </Button>
     </View>
   );
@@ -61,15 +71,28 @@ const QuestionnaireScreen = (props): React.JSX.Element => {
 
   useEffect(() => {
     axios
-      .get(`${BASE_URL}/questionbank/question/number/${questionNumber}`)
+      .get(`${BASE_URL}/questionbank/question/number/${questionNumber}/user/${11111}`)
       .then((res) => {
-        setQuestion(res.data);
+        setQuestion(res.data.question);
+        setSelectedOption(res.data.selectedOption?.id);
       })
       .catch((err) => console.log(err));
   }, [questionNumber]);
 
-  const onPressNext = () => {
+  const onPressSubmit = async () => {
     setQuestionNumber(questionNumber + 1);
+    await axios.post(`${BASE_URL}/questionbank/question/answer`, {
+      user: {
+        userId: '11111',
+      },
+      question :{
+        id: question.id
+      }, 
+      selectedOption: {
+        id: selectedOption,
+      }
+    })
+    setSelectedOption(undefined);
   };
 
   const onPressPrevious = () => {
@@ -78,7 +101,12 @@ const QuestionnaireScreen = (props): React.JSX.Element => {
 
   return (
     <View style={styles.container}>
-      {question && <QuestionPanel questionText={question.questionText} />}
+      {question && (
+        <QuestionPanel
+          questionText={question.questionText}
+          questionNumber={questionNumber}
+        />
+      )}
       {question && (
         <OptionsPanel
           options={question.options}
@@ -87,8 +115,10 @@ const QuestionnaireScreen = (props): React.JSX.Element => {
         />
       )}
       <ButtonPanel
-        onPressNext={onPressNext}
+        onPressSubmit={onPressSubmit}
         onPressPrevious={onPressPrevious}
+        questionNumber={questionNumber}
+        selectedOption={selectedOption}
       />
 
       <StatusBar style="auto" />

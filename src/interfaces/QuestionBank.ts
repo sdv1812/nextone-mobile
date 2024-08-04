@@ -13,7 +13,7 @@ export interface Question {
 }
 
 export interface Option {
-    id:      null;
+    id:      string;
     option:  string;
     comment: Comment;
 }
